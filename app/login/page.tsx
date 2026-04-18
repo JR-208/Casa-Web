@@ -1,12 +1,37 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useFormState, useFormStatus } from 'react-dom'
 import { loginAction } from '@/lib/actions'
 
 const initialState = { error: '' }
 
+function SubmitButton() {
+  const { pending } = useFormStatus()
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      style={{
+        width: '100%',
+        padding: '12px',
+        background: pending ? '#C4B8A8' : '#2C2820',
+        color: '#fff',
+        fontSize: '14px',
+        fontWeight: 500,
+        border: 'none',
+        borderRadius: '12px',
+        cursor: pending ? 'not-allowed' : 'pointer',
+        transition: 'background 0.15s',
+        fontFamily: "'DM Sans', sans-serif",
+      }}
+    >
+      {pending ? 'Verificando...' : 'Entrar'}
+    </button>
+  )
+}
+
 export default function LoginPage() {
-  const [state, formAction, isPending] = useActionState(loginAction, initialState)
+  const [state, formAction] = useFormState(loginAction, initialState)
 
   return (
     <main style={{
@@ -99,25 +124,7 @@ export default function LoginPage() {
               </p>
             )}
 
-            <button
-              type="submit"
-              disabled={isPending}
-              style={{
-                width: '100%',
-                padding: '12px',
-                background: isPending ? '#C4B8A8' : '#2C2820',
-                color: '#fff',
-                fontSize: '14px',
-                fontWeight: 500,
-                border: 'none',
-                borderRadius: '12px',
-                cursor: isPending ? 'not-allowed' : 'pointer',
-                transition: 'background 0.15s',
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-            >
-              {isPending ? 'Verificando...' : 'Entrar'}
-            </button>
+            <SubmitButton />
           </form>
         </div>
 
