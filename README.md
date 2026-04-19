@@ -1,53 +1,19 @@
-# 🏠 Hogar compartido
+# 🏠 Hogar compartido — Familia D & Familia S
 
-App para organizar el hogar entre dos familias.
+## Variables de entorno en Vercel
 
----
-
-## Cómo subir esto a Vercel (sin instalar nada)
-
-### Paso 1 — Sube estos archivos a GitHub
-
-En tu repositorio de GitHub, crea cada archivo con su ruta exacta y pega el contenido.
-Los archivos que necesitas son:
-
-```
-package.json
-next.config.js
-tsconfig.json
-tailwind.config.ts
-postcss.config.js
-middleware.ts
-.gitignore
-app/globals.css
-app/layout.tsx
-app/page.tsx
-app/login/page.tsx
-app/dashboard/page.tsx
-lib/actions.ts
-```
-
-### Paso 2 — Conecta el repo en Vercel
-
-1. Entra a vercel.com
-2. "Add New Project"
-3. Selecciona tu repositorio de GitHub
-4. Vercel detecta automáticamente que es Next.js
-
-### Paso 3 — Agrega la variable de entorno
-
-Antes de hacer deploy, en la sección **Environment Variables** agrega:
+En Vercel → tu proyecto → Settings → Environment Variables agrega estas 3:
 
 | Nombre | Valor |
 |--------|-------|
-| `HOGAR_PIN` | el PIN que quieras (ej. `1234`) |
+| `HOGAR_PIN` | Tu PIN de acceso (ej. `1234`) |
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://aytcbncjcuqalbwklisg.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `sb_publishable_TcUz9q7TimrWpWR8mxja6g_hczaTnuo` |
 
-### Paso 4 — Deploy
+Después de agregar las variables, haz **Redeploy**.
 
-Haz clic en **Deploy**. En 2 minutos tienes la app online.
+## Secciones
 
----
-
-## Cómo cambiar el PIN después
-
-En Vercel → tu proyecto → Settings → Environment Variables → edita `HOGAR_PIN` → Redeploy.
+- **Aseo** — registra qué familia hizo el aseo y qué día
+- **Compras** — lista privada por familia, se puede tachar lo comprado
+- **Tablero** — notas públicas visibles para ambas familias

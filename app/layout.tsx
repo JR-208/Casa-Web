@@ -3,7 +3,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Hogar compartido',
-  description: 'Organización del hogar entre familias',
+  description: 'Familia D y Familia S',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
