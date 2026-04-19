@@ -1,11 +1,7 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { supabase } from '@/lib/supabase'
-
-type AseoEntry = { id: string; familia: string; fecha: string; nota: string }
-type CompraItem = { id: string; familia: string; item: string; completado: boolean }
-type TableroPosta = { id: string; titulo: string; contenido: string; familia: string; created_at: string }
+import { useState, useCallback, useEffect } from 'react'
+import { demoStore, type AseoEntry, type CompraItem, type TableroPosta } from '@/lib/demo-store'
 
 const FAMILIAS = ['Familia D', 'Familia S']
 const C = {
@@ -17,7 +13,7 @@ const C = {
   blue: '#1A5276', blueBg: '#EAF2FB',
 }
 
-const S: Record<string, React.CSSProperties> = {
+const S: Record<string, React.CSSProperties | ((arg: string) => React.CSSProperties)> = {
   card: { background: C.white, border: `1px solid ${C.border}`, borderRadius: '16px', padding: '1.25rem', marginBottom: '1rem' },
   label: { fontSize: '12px', fontWeight: 500, color: C.muted, textTransform: 'uppercase' as const, letterSpacing: '0.06em' },
   input: { width: '100%', padding: '10px 12px', fontSize: '14px', border: `1px solid ${C.border}`, borderRadius: '10px', outline: 'none', background: '#FAFAF8', color: C.text, fontFamily: "'DM Sans', sans-serif" },
@@ -34,60 +30,51 @@ export default function Dashboard() {
   const [aseoFamilia, setAseoFamilia] = useState(FAMILIAS[0])
   const [aseoFecha, setAseoFecha] = useState(new Date().toISOString().split('T')[0])
   const [aseoNota, setAseoNota] = useState('')
-  const [aseoLoading, setAseoLoading] = useState(false)
 
-  const loadAseo = useCallback(async () => {
-    const { data } = await supabase.from('aseo').select('*').order('fecha', { ascending: false }).limit(20)
-    if (data) setAseoList(data)
+  const loadAseo = useCallback(() => {
+    setAseoList(demoStore.getAseo())
   }, [])
 
-  const addAseo = async () => {
-    if (aseoLoading) return
-    setAseoLoading(true)
-    await supabase.from('aseo').insert({ familia: aseoFamilia, fecha: aseoFecha, nota: aseoNota })
+  const addAseo = () => {
+    demoStore.addAseo({ familia: aseoFamilia, fecha: aseoFecha, nota: aseoNota })
     setAseoNota('')
-    await loadAseo()
-    setAseoLoading(false)
+    loadAseo()
   }
 
-  const deleteAseo = async (id: string) => {
-    await supabase.from('aseo').delete().eq('id', id)
-    await loadAseo()
+  const deleteAseo = (id: string) => {
+    demoStore.deleteAseo(id)
+    loadAseo()
   }
 
   // --- COMPRAS ---
   const [comprasFamilia, setComprasFamilia] = useState(FAMILIAS[0])
   const [comprasList, setComprasList] = useState<CompraItem[]>([])
   const [comprasInput, setComprasInput] = useState('')
-  const [comprasLoading, setComprasLoading] = useState(false)
 
-  const loadCompras = useCallback(async (fam: string) => {
-    const { data } = await supabase.from('compras').select('*').eq('familia', fam).order('created_at', { ascending: true })
-    if (data) setComprasList(data)
+  const loadCompras = useCallback((fam: string) => {
+    setComprasList(demoStore.getCompras(fam))
   }, [])
 
-  const addCompra = async () => {
-    if (!comprasInput.trim() || comprasLoading) return
-    setComprasLoading(true)
-    await supabase.from('compras').insert({ familia: comprasFamilia, item: comprasInput.trim(), completado: false })
+  const addCompra = () => {
+    if (!comprasInput.trim()) return
+    demoStore.addCompra({ familia: comprasFamilia, item: comprasInput.trim(), completado: false })
     setComprasInput('')
-    await loadCompras(comprasFamilia)
-    setComprasLoading(false)
+    loadCompras(comprasFamilia)
   }
 
-  const toggleCompra = async (item: CompraItem) => {
-    await supabase.from('compras').update({ completado: !item.completado }).eq('id', item.id)
-    await loadCompras(comprasFamilia)
+  const toggleCompra = (item: CompraItem) => {
+    demoStore.toggleCompra(item.id)
+    loadCompras(comprasFamilia)
   }
 
-  const deleteCompra = async (id: string) => {
-    await supabase.from('compras').delete().eq('id', id)
-    await loadCompras(comprasFamilia)
+  const deleteCompra = (id: string) => {
+    demoStore.deleteCompra(id)
+    loadCompras(comprasFamilia)
   }
 
-  const clearCompletadas = async () => {
-    await supabase.from('compras').delete().eq('familia', comprasFamilia).eq('completado', true)
-    await loadCompras(comprasFamilia)
+  const clearCompletadas = () => {
+    demoStore.clearCompletadas(comprasFamilia)
+    loadCompras(comprasFamilia)
   }
 
   // --- TABLERO ---
@@ -95,26 +82,22 @@ export default function Dashboard() {
   const [tableroTitulo, setTableroTitulo] = useState('')
   const [tableroContenido, setTableroContenido] = useState('')
   const [tableroFamilia, setTableroFamilia] = useState(FAMILIAS[0])
-  const [tableroLoading, setTableroLoading] = useState(false)
 
-  const loadTablero = useCallback(async () => {
-    const { data } = await supabase.from('tablero').select('*').order('created_at', { ascending: false })
-    if (data) setTableroList(data)
+  const loadTablero = useCallback(() => {
+    setTableroList(demoStore.getTablero())
   }, [])
 
-  const addTablero = async () => {
-    if (!tableroTitulo.trim() || !tableroContenido.trim() || tableroLoading) return
-    setTableroLoading(true)
-    await supabase.from('tablero').insert({ titulo: tableroTitulo.trim(), contenido: tableroContenido.trim(), familia: tableroFamilia })
+  const addTablero = () => {
+    if (!tableroTitulo.trim() || !tableroContenido.trim()) return
+    demoStore.addTablero({ titulo: tableroTitulo.trim(), contenido: tableroContenido.trim(), familia: tableroFamilia })
     setTableroTitulo('')
     setTableroContenido('')
-    await loadTablero()
-    setTableroLoading(false)
+    loadTablero()
   }
 
-  const deleteTablero = async (id: string) => {
-    await supabase.from('tablero').delete().eq('id', id)
-    await loadTablero()
+  const deleteTablero = (id: string) => {
+    demoStore.deleteTablero(id)
+    loadTablero()
   }
 
   // Load on mount and tab change
@@ -129,13 +112,13 @@ export default function Dashboard() {
 
       {/* Header */}
       <header style={{ background: C.white, borderBottom: `1px solid ${C.border}`, padding: '0 1.25rem', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
-        <span style={{ fontSize: '15px', fontWeight: 500, color: C.text }}>🏠 Hogar compartido</span>
-        <button onClick={async () => { await fetch('/api/logout', { method: 'POST' }); window.location.href = '/login' }} style={S.btnGhost}>Salir</button>
+        <span style={{ fontSize: '15px', fontWeight: 500, color: C.text }}>Hogar compartido</span>
+        <span style={{ fontSize: '11px', padding: '4px 8px', background: '#FEF3CD', color: '#856404', borderRadius: '6px' }}>Modo Demo</span>
       </header>
 
       {/* Tabs */}
       <div style={{ background: C.white, borderBottom: `1px solid ${C.border}`, display: 'flex', padding: '0 1.25rem', gap: '0' }}>
-        {([['aseo', '🧹 Aseo'], ['compras', '🛒 Compras'], ['tablero', '📋 Tablero']] as [typeof tab, string][]).map(([key, label]) => (
+        {([['aseo', 'Aseo'], ['compras', 'Compras'], ['tablero', 'Tablero']] as [typeof tab, string][]).map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)} style={{
             padding: '12px 16px', fontSize: '13px', fontWeight: tab === key ? 500 : 400,
             color: tab === key ? C.text : C.muted, background: 'none', border: 'none',
@@ -150,32 +133,32 @@ export default function Dashboard() {
         {/* ============ ASEO ============ */}
         {tab === 'aseo' && (
           <div>
-            <div style={S.card}>
-              <p style={{ ...S.label, marginBottom: '12px' }}>Registrar aseo</p>
+            <div style={S.card as React.CSSProperties}>
+              <p style={{ ...(S.label as React.CSSProperties), marginBottom: '12px' }}>Registrar aseo</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-                <select value={aseoFamilia} onChange={e => setAseoFamilia(e.target.value)} style={{ ...S.input }}>
+                <select value={aseoFamilia} onChange={e => setAseoFamilia(e.target.value)} style={{ ...(S.input as React.CSSProperties) }}>
                   {FAMILIAS.map(f => <option key={f}>{f}</option>)}
                 </select>
-                <input type="date" value={aseoFecha} onChange={e => setAseoFecha(e.target.value)} style={S.input} />
+                <input type="date" value={aseoFecha} onChange={e => setAseoFecha(e.target.value)} style={S.input as React.CSSProperties} />
               </div>
-              <input placeholder="Nota opcional (ej. incluye baños)" value={aseoNota} onChange={e => setAseoNota(e.target.value)} style={{ ...S.input, marginBottom: '10px' }} />
-              <button onClick={addAseo} disabled={aseoLoading} style={S.btn()}>
-                {aseoLoading ? 'Guardando...' : '+ Registrar'}
+              <input placeholder="Nota opcional (ej. incluye banos)" value={aseoNota} onChange={e => setAseoNota(e.target.value)} style={{ ...(S.input as React.CSSProperties), marginBottom: '10px' }} />
+              <button onClick={addAseo} style={(S.btn as (color?: string) => React.CSSProperties)()}>
+                + Registrar
               </button>
             </div>
 
-            <p style={{ ...S.label, marginBottom: '10px' }}>Historial reciente</p>
-            {aseoList.length === 0 && <p style={{ color: C.hint, fontSize: '14px', textAlign: 'center', padding: '2rem 0' }}>Aún no hay registros de aseo.</p>}
+            <p style={{ ...(S.label as React.CSSProperties), marginBottom: '10px' }}>Historial reciente</p>
+            {aseoList.length === 0 && <p style={{ color: C.hint, fontSize: '14px', textAlign: 'center', padding: '2rem 0' }}>Aun no hay registros de aseo.</p>}
             {aseoList.map(e => (
-              <div key={e.id} style={{ ...S.card, marginBottom: '8px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+              <div key={e.id} style={{ ...(S.card as React.CSSProperties), marginBottom: '8px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    <span style={S.tag(e.familia)}>{e.familia}</span>
+                    <span style={(S.tag as (fam: string) => React.CSSProperties)(e.familia)}>{e.familia}</span>
                     <span style={{ fontSize: '13px', fontWeight: 500, color: C.text }}>{formatFecha(e.fecha)}</span>
                   </div>
                   {e.nota && <p style={{ fontSize: '13px', color: C.muted, margin: 0 }}>{e.nota}</p>}
                 </div>
-                <button onClick={() => deleteAseo(e.id)} style={{ background: 'none', border: 'none', color: C.hint, cursor: 'pointer', fontSize: '16px', padding: '0 4px' }}>×</button>
+                <button onClick={() => deleteAseo(e.id)} style={{ background: 'none', border: 'none', color: C.hint, cursor: 'pointer', fontSize: '16px', padding: '0 4px' }}>x</button>
               </div>
             ))}
           </div>
@@ -197,19 +180,19 @@ export default function Dashboard() {
               ))}
             </div>
 
-            <div style={S.card}>
-              <p style={{ ...S.label, marginBottom: '10px' }}>Lista de {comprasFamilia}</p>
+            <div style={S.card as React.CSSProperties}>
+              <p style={{ ...(S.label as React.CSSProperties), marginBottom: '10px' }}>Lista de {comprasFamilia}</p>
               <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
                 <input
                   placeholder="Agregar item..." value={comprasInput}
                   onChange={e => setComprasInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && addCompra()}
-                  style={{ ...S.input, flex: 1 }}
+                  style={{ ...(S.input as React.CSSProperties), flex: 1 }}
                 />
-                <button onClick={addCompra} disabled={comprasLoading} style={S.btn()}>+</button>
+                <button onClick={addCompra} style={(S.btn as (color?: string) => React.CSSProperties)()}>+</button>
               </div>
 
-              {comprasList.length === 0 && <p style={{ color: C.hint, fontSize: '14px', textAlign: 'center', padding: '1rem 0' }}>Lista vacía — agrega algo arriba.</p>}
+              {comprasList.length === 0 && <p style={{ color: C.hint, fontSize: '14px', textAlign: 'center', padding: '1rem 0' }}>Lista vacia - agrega algo arriba.</p>}
 
               {comprasList.map(item => (
                 <div key={item.id} style={{
@@ -222,17 +205,17 @@ export default function Dashboard() {
                     background: item.completado ? C.green : 'transparent',
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    {item.completado && <span style={{ color: '#fff', fontSize: '11px', lineHeight: 1 }}>✓</span>}
+                    {item.completado && <span style={{ color: '#fff', fontSize: '11px', lineHeight: 1 }}>&#10003;</span>}
                   </button>
                   <span style={{ flex: 1, fontSize: '14px', color: item.completado ? C.hint : C.text, textDecoration: item.completado ? 'line-through' : 'none' }}>
                     {item.item}
                   </span>
-                  <button onClick={() => deleteCompra(item.id)} style={{ background: 'none', border: 'none', color: C.hint, cursor: 'pointer', fontSize: '16px' }}>×</button>
+                  <button onClick={() => deleteCompra(item.id)} style={{ background: 'none', border: 'none', color: C.hint, cursor: 'pointer', fontSize: '16px' }}>x</button>
                 </div>
               ))}
 
               {comprasList.some(i => i.completado) && (
-                <button onClick={clearCompletadas} style={{ ...S.btnGhost, marginTop: '12px', fontSize: '12px' }}>
+                <button onClick={clearCompletadas} style={{ ...(S.btnGhost as React.CSSProperties), marginTop: '12px', fontSize: '12px' }}>
                   Limpiar completados
                 </button>
               )}
@@ -243,33 +226,33 @@ export default function Dashboard() {
         {/* ============ TABLERO ============ */}
         {tab === 'tablero' && (
           <div>
-            <div style={S.card}>
-              <p style={{ ...S.label, marginBottom: '12px' }}>Nueva nota</p>
-              <select value={tableroFamilia} onChange={e => setTableroFamilia(e.target.value)} style={{ ...S.input, marginBottom: '8px' }}>
+            <div style={S.card as React.CSSProperties}>
+              <p style={{ ...(S.label as React.CSSProperties), marginBottom: '12px' }}>Nueva nota</p>
+              <select value={tableroFamilia} onChange={e => setTableroFamilia(e.target.value)} style={{ ...(S.input as React.CSSProperties), marginBottom: '8px' }}>
                 {FAMILIAS.map(f => <option key={f}>{f}</option>)}
               </select>
-              <input placeholder="Título" value={tableroTitulo} onChange={e => setTableroTitulo(e.target.value)} style={{ ...S.input, marginBottom: '8px' }} />
+              <input placeholder="Titulo" value={tableroTitulo} onChange={e => setTableroTitulo(e.target.value)} style={{ ...(S.input as React.CSSProperties), marginBottom: '8px' }} />
               <textarea
-                placeholder="Escribe la nota aquí..."
+                placeholder="Escribe la nota aqui..."
                 value={tableroContenido} onChange={e => setTableroContenido(e.target.value)}
                 rows={3}
-                style={{ ...S.input, resize: 'vertical', marginBottom: '10px' }}
+                style={{ ...(S.input as React.CSSProperties), resize: 'vertical', marginBottom: '10px' }}
               />
-              <button onClick={addTablero} disabled={tableroLoading} style={S.btn()}>
-                {tableroLoading ? 'Publicando...' : '+ Publicar nota'}
+              <button onClick={addTablero} style={(S.btn as (color?: string) => React.CSSProperties)()}>
+                + Publicar nota
               </button>
             </div>
 
-            <p style={{ ...S.label, marginBottom: '10px' }}>Notas publicadas</p>
-            {tableroList.length === 0 && <p style={{ color: C.hint, fontSize: '14px', textAlign: 'center', padding: '2rem 0' }}>No hay notas aún.</p>}
+            <p style={{ ...(S.label as React.CSSProperties), marginBottom: '10px' }}>Notas publicadas</p>
+            {tableroList.length === 0 && <p style={{ color: C.hint, fontSize: '14px', textAlign: 'center', padding: '2rem 0' }}>No hay notas aun.</p>}
             {tableroList.map(n => (
-              <div key={n.id} style={{ ...S.card, marginBottom: '8px' }}>
+              <div key={n.id} style={{ ...(S.card as React.CSSProperties), marginBottom: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={S.tag(n.familia)}>{n.familia}</span>
+                    <span style={(S.tag as (fam: string) => React.CSSProperties)(n.familia)}>{n.familia}</span>
                     <span style={{ fontSize: '14px', fontWeight: 500, color: C.text }}>{n.titulo}</span>
                   </div>
-                  <button onClick={() => deleteTablero(n.id)} style={{ background: 'none', border: 'none', color: C.hint, cursor: 'pointer', fontSize: '16px' }}>×</button>
+                  <button onClick={() => deleteTablero(n.id)} style={{ background: 'none', border: 'none', color: C.hint, cursor: 'pointer', fontSize: '16px' }}>x</button>
                 </div>
                 <p style={{ fontSize: '14px', color: C.muted, margin: '0 0 6px', lineHeight: 1.5 }}>{n.contenido}</p>
                 <p style={{ fontSize: '11px', color: C.hint, margin: 0 }}>
